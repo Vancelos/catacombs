@@ -380,6 +380,11 @@
       <div id="score-num" id="score-el">0 pts</div>
     </div>
 
+    <div id="wave-info" style="position: absolute; top: 60px; left: 50%; transform: translateX(-50%); text-align: center; z-index: 10;">
+      <div id="enemies-alive" style="font-size: 11px; color: #ff5555; letter-spacing: 2px;">INIMIGOS VIVOS: 0</div>
+      <div id="wave-timer" style="font-size: 11px; color: #aaaaaa; letter-spacing: 2px; display: none;">PRÓXIMA WAVE EM: 0.0s</div>
+    </div>
+
     <div id="minimap">
       <canvas id="mm-canvas" width="88" height="88"></canvas>
     </div>
@@ -699,6 +704,8 @@
 
     const enemies = [];
     let wave = 0, waveKills = 0, waveTotal = 0;
+    let waveTimer = 0;
+    let waitingForWave = false;
 
     function spawnEnemy(type, wx, wz) {
       const d = ENEMY_DATA[type];
@@ -831,7 +838,10 @@
       waveKills++;
       killFeed('+' + e.score + ' // ' + e.type.toUpperCase() + ' ELIMINATED');
       updateScoreHUD();
-      if (waveKills >= waveTotal) setTimeout(spawnWave, 10000);
+      if (waveKills >= waveTotal) {
+        waitingForWave = true;
+        waveTimer = 10.0;
+      }
     }
 
     function tryReload() {
@@ -1087,6 +1097,31 @@
       document.getElementById('score-num').textContent = P.score + ' pts';
     }
 
+    function updateWaveStatus(dt) {
+      const aliveEl = document.getElementById('enemies-alive');
+      const timerEl = document.getElementById('wave-timer');
+      const vivos = waveTotal - waveKills;
+
+      if (waitingForWave) {
+        waveTimer -= dt; // Desconta o tempo
+        aliveEl.style.display = 'none';
+        timerEl.style.display = 'block';
+        timerEl.textContent = 'PRÓXIMA WAVE EM: ' + Math.max(0, waveTimer).toFixed(1) + 's';
+
+        // Quando o tempo chega a zero, gera nova wave
+        if (waveTimer <= 0) {
+          waitingForWave = false;
+          timerEl.style.display = 'none';
+          aliveEl.style.display = 'block';
+          spawnWave();
+        }
+      } else {
+        aliveEl.style.display = 'block';
+        timerEl.style.display = 'none';
+        aliveEl.textContent = 'INIMIGOS VIVOS: ' + vivos;
+      }
+    }
+
     let flashTimer = 0;
     function flashDamage(enemy) {
       const el = document.getElementById('dmg-flash');
@@ -1182,6 +1217,7 @@
         movePlayer(dt);
         updateEnemies(dt);
         updateReload(dt);
+        updateWaveStatus(dt);
       }
 
       // shoot cooldown
@@ -1269,6 +1305,8 @@
         for (const e of enemies) scene.remove(e.mesh);
         enemies.length = 0;
         wave = 0; waveKills = 0; waveTotal = 0;
+        waitingForWave = false;
+        waveTimer = 0;
 
         // reset bullet holes
         for (const h of bulletHoles) scene.remove(h);
