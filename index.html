@@ -381,8 +381,8 @@
     </div>
 
     <div id="wave-info" style="position: absolute; top: 60px; left: 50%; transform: translateX(-50%); text-align: center; z-index: 10;">
-      <div id="enemies-alive" style="font-size: 11px; color: #ff5555; letter-spacing: 2px;">INIMIGOS VIVOS: 0</div>
-      <div id="wave-timer" style="font-size: 11px; color: #aaaaaa; letter-spacing: 2px; display: none;">PRÓXIMA WAVE EM: 0.0s</div>
+      <div id="enemies-alive" style="font-size: 11px; color: #ff5555; letter-spacing: 2px;">ENEMIES ALIVE: 0</div>
+      <div id="wave-timer" style="font-size: 11px; color: #aaaaaa; letter-spacing: 2px; display: none;">NEXT WAVE EM: 0.0s</div>
     </div>
 
     <div id="minimap">
@@ -1118,7 +1118,7 @@
       } else {
         aliveEl.style.display = 'block';
         timerEl.style.display = 'none';
-        aliveEl.textContent = 'INIMIGOS VIVOS: ' + vivos;
+        aliveEl.textContent = 'ENEMIES ALIVE: ' + vivos;
       }
     }
 
