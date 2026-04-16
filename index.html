@@ -593,7 +593,7 @@
             scene.add(c2);
             dungeonMeshes.push(c2);
 
-            if (v === 5) buildTorch(wx, wz);
+            if (v === 5) buildTorch(wx, wz, row, col);
             if (v === 6) buildPickup(wx, wz, 'health');
             if (v === 7) buildPickup(wx, wz, 'ammo');
             if (v === 4) buildExit(wx, wz);
@@ -602,23 +602,36 @@
       }
     }
 
-    function buildTorch(wx, wz) {
+    function buildTorch(wx, wz, row, col) {
       const g = new THREE.Group();
-      g.position.set(wx, 0.1, wz);
 
-      // bracket
+      let px = wx;
+      let pz = wz;
+
+      const offset = 1.4; 
+
+      if (row > 0 && MAP[row - 1][col] === 0) {
+        pz = wz - offset;
+      } else if (row < ROWS - 1 && MAP[row + 1][col] === 0) {
+        pz = wz + offset;
+      } else if (col > 0 && MAP[row][col - 1] === 0) {
+        px = wx - offset;
+      } else if (col < COLS - 1 && MAP[row][col + 1] === 0) {
+        px = wx + offset;
+      }
+
+      g.position.set(px, 0.4, pz);
+
       const bracket = new THREE.Mesh(
         new THREE.BoxGeometry(0.1, 0.3, 0.1),
         new THREE.MeshLambertMaterial({ color: 0x554433 })
       );
       g.add(bracket);
 
-      // flame (point light)
       const light = new THREE.PointLight(0xff6600, 10, 16);
       light.position.y = 0.5;
       g.add(light);
 
-      // flame geo
       const flame = new THREE.Mesh(
         new THREE.ConeGeometry(0.08, 0.25, 6),
         new THREE.MeshBasicMaterial({ color: 0xff9900 })
