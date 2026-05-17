@@ -1,0 +1,11 @@
+Model Information:
+* title:	Chainsaw Brute (FPS Creator)
+* source:	https://sketchfab.com/3d-models/chainsaw-brute-fps-creator-95abe0a7474649ebaaaa3fcab0fdb9ab
+* author:	Yopp (https://sketchfab.com/yopp_3D)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Chainsaw Brute (FPS Creator)" (https://sketchfab.com/3d-models/chainsaw-brute-fps-creator-95abe0a7474649ebaaaa3fcab0fdb9ab) by Yopp (https://sketchfab.com/yopp_3D) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

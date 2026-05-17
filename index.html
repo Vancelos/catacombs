@@ -405,7 +405,6 @@
 
   <div id="lock-msg">Click to capture mouse</div>
 
-
   <div id="level-flash">
     <div id="level-title">LEVEL 2</div>
     <div id="level-sub">THE OSSUARY</div>
@@ -415,13 +414,16 @@
   <script type="importmap">
     {
       "imports": {
-        "three": "https://threejs.org/build/three.module.js"
+        "three": "https://threejs.org/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
       }
     }
   </script>
 
   <script type="module">
     import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
     // ══════════════════════════════════════════════
     //  CATACOMBS — 3D Horror Dungeon Crawler
@@ -492,6 +494,29 @@
         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,1,0],
         [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0],
       ],
+      // ── LEVEL 3 — The Depths (only Brutes, dense maze) ──
+      [
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        [0,3,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0],
+        [0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,1,0],
+        [0,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1,1,0,1,0],
+        [0,1,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1,0],
+        [0,1,0,1,0,1,1,1,1,1,1,1,0,1,1,0,1,0,1,0],
+        [0,1,0,1,0,0,0,0,0,0,0,0,0,1,1,0,1,0,1,0],
+        [0,1,0,1,1,1,1,1,0,1,1,1,1,1,0,0,1,0,1,0],
+        [0,1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1,0,1,0],
+        [0,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,0,1,0],
+        [0,0,0,0,0,1,0,1,0,1,0,1,0,0,0,0,0,0,1,0],
+        [0,1,1,1,0,1,0,1,1,1,0,1,0,1,1,1,1,1,1,0],
+        [0,1,0,1,0,1,0,0,0,0,0,1,0,1,0,0,0,0,1,0],
+        [0,1,0,1,0,1,1,1,1,1,1,1,0,1,0,1,1,0,1,0],
+        [0,1,0,1,0,0,0,0,0,0,0,0,0,1,0,1,0,0,1,0],
+        [0,1,0,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,1,0],
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0],
+        [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0],
+      ],
     ];
 
     let currentLevel = 0;
@@ -559,6 +584,46 @@
     const floorMat = new THREE.MeshLambertMaterial({ map: floorTex, color: 0xbbbbbb });
     const ceilMat  = new THREE.MeshLambertMaterial({ color: 0x333333 });
     const exitMat  = new THREE.MeshLambertMaterial({ color: 0x004400, emissive: new THREE.Color(0x002200) });
+
+    // ── MONSTER MODELS ──────────────────────────────
+    let smilyPrefab = null;
+    let smilyAnimations = [];
+
+    let chainsawPrefab = null;
+    let chainsawAnimations = [];
+
+    const loader = new GLTFLoader();
+    
+    // 1. Load the Smily (for Grunts)
+    loader.load('smily_horror_monster/scene.gltf', (gltf) => {
+      smilyPrefab = gltf.scene;
+      smilyPrefab.scale.set(0.01, 0.01, 0.01); 
+      smilyPrefab.traverse((child) => {
+        if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+      });
+      smilyAnimations = gltf.animations;
+    });
+
+    // 2. Load the Chainsaw Brute (for Brutes)
+    loader.load('chainsaw_brute_fps_creator/scene.gltf', (gltf) => {
+      const model = gltf.scene;
+      
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const scale = 3 / size.y;
+      model.scale.set(scale, scale, scale);
+
+      const scaledBox = new THREE.Box3().setFromObject(model);
+      model.position.y = -scaledBox.min.y; 
+      
+      chainsawPrefab = new THREE.Group();
+      chainsawPrefab.add(model);
+      
+      chainsawPrefab.traverse((child) => {
+        if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+      });
+      chainsawAnimations = gltf.animations; 
+    });
 
     // ── BUILD DUNGEON ──────────────────────────────
     let collectibles = []; // {mesh, type, x, z}
@@ -687,6 +752,7 @@
       hp: 100, maxHp: 100,
       ammo: 6, reserve: 48,
       score: 0,
+      totalKills: 0,
       yaw: 0, pitch: 0,
       vx: 0, vz: 0,
       dead: false, won: false,
@@ -709,63 +775,131 @@
 
     function spawnEnemy(type, wx, wz) {
       const d = ENEMY_DATA[type];
-      const geo = type === 'wraith'
-        ? new THREE.ConeGeometry(0.25, 0.9, 6)
-        : new THREE.BoxGeometry(0.5, 0.85, 0.35);
-      const mat = new THREE.MeshLambertMaterial({
-        color: d.color,
-        emissive: new THREE.Color(d.color).multiplyScalar(0.3)
-      });
-      const mesh = new THREE.Mesh(geo, mat);
+      let mesh;
+      let mixer = null;
 
-      // eyes
-      const eyeL = new THREE.Mesh(
-        new THREE.SphereGeometry(0.04, 4, 4),
-        new THREE.MeshBasicMaterial({ color: 0xff0000 })
-      );
-      const eyeR = eyeL.clone();
-      eyeL.position.set(-0.1, 0.25, 0.18);
-      eyeR.position.set(0.1, 0.25, 0.18);
-      mesh.add(eyeL);
-      mesh.add(eyeR);
+      // Choose which prefab and animations to use based on type
+      let prefabToUse = null;
+      let animsToUse = [];
 
-      mesh.position.set(wx, type === 'wraith' ? -0.1 : -CELL / 2 + 0.43, wz);
-      mesh.castShadow = true;
+      if (type === 'brute' && chainsawPrefab) {
+        prefabToUse = chainsawPrefab;
+        animsToUse = chainsawAnimations;
+      } else if ((type === 'grunt' || type === 'wraith') && smilyPrefab) {
+        prefabToUse = smilyPrefab;
+        animsToUse = smilyAnimations;
+      }
+
+      if (prefabToUse) {
+        // Clone the chosen model
+        mesh = SkeletonUtils.clone(prefabToUse);
+        mesh.position.set(wx, -CELL / 2, wz);
+
+        if (animsToUse.length > 0) {
+          mixer = new THREE.AnimationMixer(mesh);
+          const action = mixer.clipAction(animsToUse[0]);
+          action.play();
+        }
+      } else {
+        // Old fallback in case models are still loading from the net
+        const geo = type === 'wraith'
+          ? new THREE.ConeGeometry(0.25, 0.9, 6)
+          : new THREE.BoxGeometry(0.5, 0.85, 0.35);
+        const mat = new THREE.MeshLambertMaterial({
+          color: d.color,
+          emissive: new THREE.Color(d.color).multiplyScalar(0.3)
+        });
+        mesh = new THREE.Mesh(geo, mat);
+        
+        // Fallback eyes
+        const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 4), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+        const eyeR = eyeL.clone();
+        eyeL.position.set(-0.1, 0.25, 0.18);
+        eyeR.position.set(0.1, 0.25, 0.18);
+        mesh.add(eyeL);
+        mesh.add(eyeR);
+
+        mesh.position.set(wx, type === 'wraith' ? -0.1 : -CELL / 2 + 0.43, wz);
+      }
+
       scene.add(mesh);
 
       enemies.push({
-        mesh, type, hp: d.hp, maxHp: d.hp,
+        mesh, mixer, type, hp: d.hp, maxHp: d.hp,
         speed: d.speed, dmg: d.dmg, range: d.range, score: d.score,
         wx, wz, active: true,
         attackCooldown: 0, alertRange: 10 + (type === 'wraith' ? 4 : 0),
         phase: Math.random() * Math.PI * 2,
         stagger: 0,
+        originalEmissive: new THREE.Color(0x000000)
       });
+    }
+
+    function getReachableCells() {
+      // BFS flood-fill from start position (cell 3) to find
+      // only the accessible/connected cells in the maze
+      let startR = -1, startC = -1;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (MAP[r][c] === 3) { startR = r; startC = c; break; }
+        }
+        if (startR !== -1) break;
+      }
+      if (startR === -1) return null; // fallback
+
+      const visited = Array.from({ length: ROWS }, () => new Array(COLS).fill(false));
+      const queue = [[startR, startC]];
+      visited[startR][startC] = true;
+      const reachable = new Set();
+      const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+
+      while (queue.length) {
+        const [r, c] = queue.shift();
+        reachable.add(r * COLS + c);
+        for (const [dr, dc] of dirs) {
+          const nr = r + dr, nc = c + dc;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+          if (visited[nr][nc]) continue;
+          if (MAP[nr][nc] === 0) continue; // wall
+          visited[nr][nc] = true;
+          queue.push([nr, nc]);
+        }
+      }
+      return reachable;
     }
 
     function spawnWave() {
       wave++;
       const positions = [];
+      const reachable = getReachableCells();
 
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
-          if (MAP[r][c] >= 1 && MAP[r][c] !== 3) {
-            const wx = c * CELL, wz = r * CELL;
-            const dx = wx - camera.position.x, dz = wz - camera.position.z;
-            if (Math.sqrt(dx*dx + dz*dz) > 12) positions.push([wx, wz]);
-          }
+          const v = MAP[r][c];
+          if (v < 1 || v === 3) continue;
+          if (reachable && !reachable.has(r * COLS + c)) continue; // not accessible
+          const wx = c * CELL, wz = r * CELL;
+          const dx = wx - camera.position.x, dz = wz - camera.position.z;
+          if (Math.sqrt(dx*dx + dz*dz) > 12) positions.push([wx, wz]);
         }
       }
 
       shuffle(positions);
-      const count = 3 + wave * 2;
+      // Level 3: massive single wave — all Brutes at once
+      const count = currentLevel >= 2 ? Math.min(positions.length, 8 + wave * 3) : 3 + wave * 2;
       waveTotal = count;
       waveKills = 0;
 
       for (let i = 0; i < Math.min(count, positions.length); i++) {
         const [wx, wz] = positions[i];
-        const r = Math.random();
-        const type = r < 0.1 && wave > 1 ? 'brute' : r < 0.35 && wave > 0 ? 'wraith' : 'grunt';
+        let type;
+        if (currentLevel >= 2) {
+          // Level 3 — The Depths: only Brutes, the most intense nightmare
+          type = 'brute';
+        } else {
+          const r = Math.random();
+          type = r < 0.25 ? 'brute' : r < 0.5 ? 'wraith' : 'grunt';
+        }
         spawnEnemy(type, wx, wz);
       }
 
@@ -810,10 +944,18 @@
 
         for (const e of enemies) {
           if (!e.active) continue;
-          if (e.mesh === hit.object || e.mesh.children.includes(hit.object)) {
-            target = e;
-            break;
+          
+          // Traverse the object tree from the hit point to the top
+          let currentObj = hit.object;
+          while (currentObj) {
+            if (currentObj === e.mesh) {
+              target = e;
+              break;
+            }
+            currentObj = currentObj.parent;
           }
+          
+          if (target) break;
         }
 
         if (target) {
@@ -835,12 +977,25 @@
       e.active = false;
       scene.remove(e.mesh);
       P.score += e.score;
+      P.totalKills++;
       waveKills++;
       killFeed('+' + e.score + ' // ' + e.type.toUpperCase() + ' ELIMINATED');
       updateScoreHUD();
+      // Every 10 total kills: +15 reserve ammo
+      if (P.totalKills % 10 === 0) {
+        P.reserve = Math.min(72, P.reserve + 15);
+        updateAmmoHUD();
+        killFeed('// ' + P.totalKills + ' KILLS — +15 ROUNDS');
+      }
       if (waveKills >= waveTotal) {
-        waitingForWave = true;
-        waveTimer = 10.0;
+        if (currentLevel >= 2) {
+          // Level 3: no next wave — show exit message
+          killFeed('// THE PATH IS CLEAR. FIND THE EXIT.');
+          document.getElementById('wave-num').textContent = 'ESCAPE. NOW.';
+        } else {
+          waitingForWave = true;
+          waveTimer = 10.0;
+        }
       }
     }
 
@@ -871,7 +1026,19 @@
 
     // ── INPUT ──────────────────────────────────────
     const keys = {};
-    document.addEventListener('keydown', e => keys[e.code] = true);
+    document.addEventListener('keydown', e => {
+      keys[e.code] = true;
+      // Shift+S — skip level (debug)
+      if (e.code === 'KeyS' && e.shiftKey && gameStarted && !P.dead) {
+        if (currentLevel + 1 < MAPS.length) {
+          P.won = true;
+          triggerLevelTransition();
+        } else {
+          P.won = true;
+          endGame(true);
+        }
+      }
+    });
     document.addEventListener('keyup',   e => keys[e.code] = false);
 
     let locked = false;
@@ -916,6 +1083,14 @@
           || isSolid(wx + PLAYER_RADIUS, wz - PLAYER_RADIUS)
           || isSolid(wx - PLAYER_RADIUS, wz + PLAYER_RADIUS)
           || isSolid(wx + PLAYER_RADIUS, wz + PLAYER_RADIUS);
+    }
+
+    const MONSTER_RADIUS = 1.15; 
+    function isMonsterWall(wx, wz) {
+      return isSolid(wx - MONSTER_RADIUS, wz - MONSTER_RADIUS)
+          || isSolid(wx + MONSTER_RADIUS, wz - MONSTER_RADIUS)
+          || isSolid(wx - MONSTER_RADIUS, wz + MONSTER_RADIUS)
+          || isSolid(wx + MONSTER_RADIUS, wz + MONSTER_RADIUS);
     }
 
     function movePlayer(dt) {
@@ -986,6 +1161,7 @@
               if (currentLevel + 1 < MAPS.length) {
                 triggerLevelTransition();
               } else {
+                // Last level — the nightmare ends, show win screen
                 endGame(true);
               }
             }
@@ -998,15 +1174,24 @@
       for (const e of enemies) {
         if (!e.active) continue;
 
+        // Handle damage flashing (stagger) safely for glTF models and primitives
         if (e.stagger > 0) {
           e.stagger -= dt;
-          e.mesh.material.emissive.setHex(0xff4400);
+          e.mesh.traverse((child) => {
+            if (child.isMesh && child.material && child.material.emissive) {
+              child.material.emissive.setHex(0xff4400); // Orange when taking damage
+            }
+          });
           continue;
         }
 
-        e.mesh.material.emissive.setHex(
-          new THREE.Color(e.mesh.material.color.getHex()).multiplyScalar(0.3).getHex()
-        );
+        // Restore the original color
+        e.mesh.traverse((child) => {
+          if (child.isMesh && child.material && child.material.emissive) {
+            // Use the originalEmissive defined in spawnEnemy
+            child.material.emissive.setHex(e.originalEmissive.getHex()); 
+          }
+        });
 
         const dx = camera.position.x - e.mesh.position.x;
         const dz = camera.position.z - e.mesh.position.z;
@@ -1016,14 +1201,9 @@
           // move toward player
           const nx = e.mesh.position.x + dx / dist * e.speed * dt;
           const nz = e.mesh.position.z + dz / dist * e.speed * dt;
-          if (!isWall(nx, e.mesh.position.z)) e.mesh.position.x = nx;
-          if (!isWall(e.mesh.position.x, nz)) e.mesh.position.z = nz;
+          if (!isMonsterWall(nx, e.mesh.position.z)) e.mesh.position.x = nx;
+          if (!isMonsterWall(e.mesh.position.x, nz)) e.mesh.position.z = nz;
           e.mesh.rotation.y = Math.atan2(dx, dz);
-
-          // wraith bob
-          if (e.type === 'wraith') {
-            e.mesh.position.y = Math.sin(Date.now() * 0.003 + e.phase) * 0.15;
-          }
 
           // attack
           if (dist < e.range && e.attackCooldown <= 0) {
@@ -1103,12 +1283,12 @@
       const vivos = waveTotal - waveKills;
 
       if (waitingForWave) {
-        waveTimer -= dt; // Desconta o tempo
+        waveTimer -= dt; // Decrease the timer
         aliveEl.style.display = 'none';
         timerEl.style.display = 'block';
         timerEl.textContent = 'PRÓXIMA WAVE EM: ' + Math.max(0, waveTimer).toFixed(1) + 's';
 
-        // Quando o tempo chega a zero, gera nova wave
+        // When the timer reaches zero, spawn a new wave
         if (waveTimer <= 0) {
           waitingForWave = false;
           timerEl.style.display = 'none';
@@ -1274,7 +1454,7 @@
 
 
     // ── LEVEL TRANSITION ───────────────────────────
-    const levelNames = ['THE CATACOMBS', 'THE OSSUARY'];
+    const levelNames = ['THE CATACOMBS', 'THE OSSUARY', 'THE DEPTHS'];
 
     function triggerLevelTransition() {
       animating = false;
@@ -1312,9 +1492,16 @@
         for (const h of bulletHoles) scene.remove(h);
         bulletHoles.length = 0;
 
-        // adjust fog / ambient for deeper level
-        scene.fog.near = 6;
-        scene.fog.far  = 28;
+        // Adjust fog / ambient depending on the level
+        if (currentLevel >= 2) {
+          // Level 3 — The Depths: almost zero visibility, blood red
+          scene.fog = new THREE.Fog(0x220000, 4, 18);
+          scene.background = new THREE.Color(0x110000);
+          renderer.toneMappingExposure = 1.4;
+        } else {
+          scene.fog.near = 6;
+          scene.fog.far  = 28;
+        }
 
         // rebuild
         buildDungeon();
@@ -1366,7 +1553,8 @@
       renderer.setSize(innerWidth, innerHeight);
     });
 
-    window.startGame = startGame;
+  // Expose necessary global functions for HTML onclick
+  window.startGame = startGame;
   </script>
 </body>
 </html>
