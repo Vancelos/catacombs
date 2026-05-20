@@ -1,0 +1,354 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+}
+
+#c {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* HUD */
+#hud {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* vignette */
+#hud::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* crosshair */
+#xhair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 18px;
+    height: 18px;
+    z-index: 10;
+}
+
+#xhair::before,
+#xhair::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 80, 80, 0.8);
+    border-radius: 2px;
+}
+
+#xhair::before {
+    width: 2px;
+    height: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+#xhair::after {
+    width: 100%;
+    height: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* health bar */
+#health-wrap {
+    position: absolute;
+    bottom: 28px;
+    left: 28px;
+    z-index: 10;
+}
+
+#health-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: #bb2222;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+#health-bar {
+    width: 160px;
+    height: 6px;
+    background: rgba(255, 0, 0, 0.2);
+    border: 1px solid #662222;
+    border-radius: 1px;
+}
+
+#health-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #aa0000, #ff3333);
+    border-radius: 1px;
+    transition: width .2s;
+}
+
+#health-num {
+    font-size: 20px;
+    color: #ee2222;
+    margin-top: 4px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* ammo */
+#ammo-wrap {
+    position: absolute;
+    bottom: 28px;
+    right: 28px;
+    z-index: 10;
+    text-align: right;
+}
+
+#ammo-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+#ammo-num {
+    font-size: 26px;
+    color: #ccc;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+#ammo-total {
+    font-size: 12px;
+    color: #666;
+}
+
+/* wave / score */
+#wave-wrap {
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    text-align: center;
+}
+
+#wave-num {
+    font-size: 11px;
+    letter-spacing: 5px;
+    color: #882222;
+    text-transform: uppercase;
+}
+
+#score-num {
+    font-size: 13px;
+    color: #666;
+    letter-spacing: 2px;
+    margin-top: 3px;
+}
+
+/* compass minimap */
+#minimap {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    z-index: 10;
+    width: 88px;
+    height: 88px;
+    border: 1px solid #552222;
+    border-radius: 50%;
+    overflow: hidden;
+    opacity: 0.85;
+}
+
+#minimap canvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* kill feed */
+#killfeed {
+    position: absolute;
+    top: 22px;
+    left: 22px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.kf-line {
+    font-size: 10px;
+    color: #ff5555;
+    letter-spacing: 2px;
+    opacity: 1;
+    transition: opacity 1s;
+    text-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
+}
+
+.kf-headshot { 
+    color: #ffcc00 !important; 
+    text-shadow: 0 0 8px rgba(255, 200, 0, 0.8) !important; 
+    font-weight: bold; 
+}
+
+/* damage flash */
+#dmg-flash {
+    position: absolute;
+    inset: 0;
+    background: rgba(200, 0, 0, 0);
+    z-index: 5;
+    pointer-events: none;
+    transition: background .08s;
+}
+
+/* reload bar */
+#reload-bar-wrap {
+    position: absolute;
+    bottom: 70px;
+    right: 28px;
+    z-index: 10;
+    text-align: right;
+    display: none;
+}
+
+#reload-label {
+    font-size: 9px;
+    color: #888;
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+}
+
+#reload-bar {
+    width: 100px;
+    height: 3px;
+    background: #333;
+    margin-left: auto;
+}
+
+#reload-fill {
+    height: 100%;
+    background: #888;
+    width: 0%;
+    transition: width .05s;
+}
+
+/* overlay */
+#overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    z-index: 100;
+}
+
+#overlay.hidden {
+    display: none;
+}
+
+#ov-title {
+    font-size: 3rem;
+    letter-spacing: 8px;
+    color: #cc2222;
+    text-transform: uppercase;
+    text-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
+}
+
+#ov-sub {
+    font-size: 0.8rem;
+    color: #776666;
+    letter-spacing: 3px;
+    max-width: 340px;
+    text-align: center;
+    line-height: 1.8;
+}
+
+#ov-score {
+    font-size: 1.8rem;
+    color: #dd2222;
+    letter-spacing: 4px;
+}
+
+#ov-btn {
+    margin-top: 8px;
+    padding: 12px 36px;
+    font-family: 'Courier New';
+    font-size: 0.85rem;
+    letter-spacing: 4px;
+    background: transparent;
+    color: #cc2222;
+    border: 1px solid #662222;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all .2s;
+}
+
+#ov-btn:hover:not(:disabled) {
+    background: rgba(180, 0, 0, 0.2);
+    color: #ee3333;
+    border-color: #aa2222;
+}
+
+#ov-btn:disabled {
+    color: #553333;
+    border-color: #442222;
+    cursor: not-allowed;
+}
+
+#lock-msg {
+    position: fixed;
+    bottom: 50%;
+    left: 50%;
+    transform: translate(-50%, 50%);
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    color: #555;
+    z-index: 50;
+    pointer-events: none;
+}
+
+/* level transition flash */
+#level-flash {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+#level-title {
+    font-size: 2.2rem;
+    letter-spacing: 10px;
+    color: #882222;
+    text-transform: uppercase;
+    text-shadow: 0 0 24px rgba(255,0,0,0.4);
+}
+
+#level-sub {
+    font-size: 0.75rem;
+    letter-spacing: 6px;
+    color: #554444;
+    text-transform: uppercase;
+}
