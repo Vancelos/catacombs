@@ -372,7 +372,8 @@ function buildExit(wx, wz) {
 }
 
 buildDungeon();
-scene.add(new THREE.AmbientLight(0x554444, 3.5));
+const ambientLight = new THREE.AmbientLight(0x554444, 3.5);
+scene.add(ambientLight);
 
 // ── PLAYER STATE ───────────────────────────────
 const P = {
@@ -592,9 +593,9 @@ function spawnDamageNum(pos, val) { flashDamage(false); }
 const keys = {};
 document.addEventListener('keydown', e => {
     keys[e.code] = true;
-    if (e.code === 'KeyS' && e.shiftKey && gameStarted && !P.dead) {
-    if (currentLevel + 1 < MAPS.length) { P.won = true; triggerLevelTransition(); } 
-    else { P.won = true; endGame(true); }
+    if (e.code === 'Escape' && gameStarted) {
+        const isOpen = settingsPanel.classList.toggle('open');
+        if (isOpen && document.pointerLockElement) document.exitPointerLock();
     }
     if (e.code === 'KeyR') tryReload();
 });
@@ -943,3 +944,40 @@ function endGame(won) {
 window.addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); });
 
 window.startGame = startGame;
+
+// ── SETTINGS PANEL ────────────────────────────
+const settingsPanel = document.getElementById('settings-panel');
+
+// FOG slider — direita = menos fog (mais distância visível)
+const fogSlider = document.getElementById('s-fog');
+const fogVal    = document.getElementById('s-fog-val');
+fogSlider.addEventListener('input', () => {
+    const v = parseFloat(fogSlider.value);
+    // invert: direita = mais denso (menos distância visível)
+    const far = 68 - v;
+    scene.fog.far  = far;
+    scene.fog.near = far * 0.25;
+    fogVal.textContent = v;
+});
+
+// DARKNESS slider — direita = mais escuro (invertido: max slider = min intensity)
+const darkSlider = document.getElementById('s-dark');
+const darkVal    = document.getElementById('s-dark-val');
+darkSlider.addEventListener('input', () => {
+    const v = parseFloat(darkSlider.value);
+    // invert: slider vai de 0 (claro) a 10 (escuro), intensity é o oposto
+    ambientLight.intensity = 10 - v;
+    darkVal.textContent = v.toFixed(1);
+});
+
+// VOLUME slider
+const volSlider = document.getElementById('s-vol');
+const volVal    = document.getElementById('s-vol-val');
+volSlider.addEventListener('input', () => {
+    const v = parseFloat(volSlider.value);
+    if (shootSound.buffer)      shootSound.setVolume(v * 0.5);
+    if (reloadSound.buffer)     reloadSound.setVolume(v * 0.5);
+    if (stepSound.buffer)       stepSound.setVolume(v * 0.7);
+    if (backgroundSound.buffer) backgroundSound.setVolume(v * 0.5);
+    volVal.textContent = Math.round(v * 100) + '%';
+});

@@ -46,6 +46,37 @@
       <canvas id="mm-canvas" width="88" height="88"></canvas>
     </div>
     <div id="killfeed"></div>
+
+    <div id="settings-panel">
+      <div class="settings-title">OPTIONS <span class="settings-hint">ESC TO CLOSE</span></div>
+
+      <div class="settings-row">
+        <label class="settings-label">FOG</label>
+        <div class="settings-track">
+          <input type="range" id="s-fog" min="8" max="60" step="1" value="40">
+          <div class="settings-ends"><span>DENSE</span><span>CLEAR</span></div>
+        </div>
+        <span class="settings-val" id="s-fog-val">40</span>
+      </div>
+
+      <div class="settings-row">
+        <label class="settings-label">DARKNESS</label>
+        <div class="settings-track">
+          <input type="range" id="s-dark" min="0" max="10" step="0.1" value="3.5">
+          <div class="settings-ends"><span>BRIGHT</span><span>DARK</span></div>
+        </div>
+        <span class="settings-val" id="s-dark-val">3.5</span>
+      </div>
+
+      <div class="settings-row">
+        <label class="settings-label">VOLUME</label>
+        <div class="settings-track">
+          <input type="range" id="s-vol" min="0" max="1" step="0.01" value="0.5">
+          <div class="settings-ends"><span>MUTE</span><span>MAX</span></div>
+        </div>
+        <span class="settings-val" id="s-vol-val">50%</span>
+      </div>
+    </div>
   </div>
 
   <div id="overlay">
@@ -71,8 +102,8 @@
   <script type="importmap">
     {
       "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.183.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.0/examples/jsm/"
+        "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/"
       }
     }
   </script>
