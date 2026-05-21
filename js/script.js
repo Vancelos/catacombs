@@ -205,14 +205,15 @@ const loader = new GLTFLoader();
 let modelsLoaded = 0;
 function checkAssetsLoaded() {
     modelsLoaded++;
-    if (modelsLoaded >= 2) {
     const btn = document.getElementById('ov-btn');
-    btn.textContent = 'ENTER';
-    btn.disabled = false; // Unlocks the button!
+    btn.textContent = `LOADING... (${modelsLoaded}/2)`;
+    if (modelsLoaded >= 2) {
+        btn.textContent = 'ENTER';
+        btn.disabled = false;
     }
 }
 
-loader.load('smily_horror_monster/scene.gltf', (gltf) => {
+loader.load('models/smily_horror_monster/scene.gltf', (gltf) => {
     smilyPrefab = gltf.scene;
     smilyPrefab.scale.set(0.01, 0.01, 0.01); 
     smilyPrefab.traverse((child) => {
@@ -231,7 +232,7 @@ loader.load('smily_horror_monster/scene.gltf', (gltf) => {
     checkAssetsLoaded();
 });
 
-loader.load('chainsaw_brute_fps_creator/scene.gltf', (gltf) => {
+loader.load('models/chainsaw_brute_fps_creator/scene.gltf', (gltf) => {
     const model = gltf.scene;
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
@@ -901,6 +902,12 @@ function startGame() {
     document.getElementById('overlay').classList.add('hidden');
     gameStarted = true; animating = true; clock.update();
     for (let r = 0; r < ROWS; r++) { for (let c = 0; c < COLS; c++) { if (MAP[r][c] === 3) { camera.position.set(c * CELL, 0.65, r * CELL); break; } } }
+        audioLoader.load('sounds/background.mp3', (buffer) => {
+        backgroundSound.setBuffer(buffer);
+        backgroundSound.setVolume(0.5);
+        backgroundSound.setLoop(true);
+        backgroundSound.play();
+    });
     spawnWave(); gameLoop(); document.getElementById('lock-msg').style.display = 'block';
 }
 
