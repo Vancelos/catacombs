@@ -207,7 +207,7 @@ function checkAssetsLoaded() {
     modelsLoaded++;
     const btn = document.getElementById('ov-btn');
     btn.textContent = `LOADING... (${modelsLoaded}/2)`;
-    if (modelsLoaded >= 2) {
+    if (modelsLoaded >= 3) {
         btn.textContent = 'ENTER';
         btn.disabled = false;
     }
@@ -220,11 +220,11 @@ loader.load('models/smily_horror_monster/scene.gltf', (gltf) => {
     if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
     });
     
-    // --- CUT THE GIANT SMILY ANIMATION ---
+    // --- SLICE THE FULL SMILY ANIMATION ---
     const clipInteiro = gltf.animations[0];
     
-    // INITIAL GUESS: Cut from frame 0 to 60 at 30fps. 
-    // You'll have to test and adjust these numbers until you isolate the perfect "walk"!
+    // Initial estimate: cut from frame 0 to 60 at 30fps.
+    // Adjust these values until you isolate the perfect walk loop.
     const walkClip = THREE.AnimationUtils.subclip(clipInteiro, 'SmilyWalk', 0, 60, 30);
     
     smilyAnimations = [walkClip];
@@ -249,17 +249,17 @@ loader.load('models/chainsaw_brute_fps_creator/scene.gltf', (gltf) => {
     if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
     });
     
-    // --- CUT THE GIANT ANIMATION ---
+    // --- SLICE THE FULL CHAINSAW ANIMATION ---
     const clipInteiro = gltf.animations[0];
     
-    // The default frame rate is usually 24 or 30 fps. Let's use 30.
-    // We cut the perfect walking loop you discovered (410 to 510)
+    // Default frame rate is usually 24 or 30 fps — using 24 here.
+    // Walk loop isolated at frames 410–510.
     const walkClip = THREE.AnimationUtils.subclip(clipInteiro, 'BruteWalk', 410, 510, 24);
     
-    // We cut the part where he spots you (optional for you to use later)
+    // Alert clip for when the brute spots the player (optional)
     const alertClip = THREE.AnimationUtils.subclip(clipInteiro, 'BruteAlert', 410, 500, 30);
 
-    // We keep only our new cut clips!
+    // Keep only our trimmed clips
     chainsawAnimations = [walkClip, alertClip]; 
     
     checkAssetsLoaded();
@@ -269,11 +269,41 @@ loader.load('models/chainsaw_brute_fps_creator/scene.gltf', (gltf) => {
 const weaponGroup = new THREE.Group();
 camera.add(weaponGroup);
 
-const gunGeo = new THREE.BoxGeometry(0.08, 0.12, 0.4);
-const gunMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8, roughness: 0.2 });
-const gunMesh = new THREE.Mesh(gunGeo, gunMat);
+const gunMesh = new THREE.Group();
 gunMesh.position.set(0.2, -0.25, -0.4); 
 weaponGroup.add(gunMesh);
+
+loader.load('models/colt_m1911/scene.gltf', (gltf) => { 
+    const gunModel = gltf.scene;
+    
+    gunModel.scale.set(0.02, 0.02, 0.02);
+
+    gunModel.position.set(0.35, -0.25, -0.75);
+
+    gunModel.rotation.set(
+        THREE.MathUtils.degToRad(-5),
+        THREE.MathUtils.degToRad(270),
+        THREE.MathUtils.degToRad(-5)
+    );
+    
+    gunModel.traverse((child) => {
+        if (child.isMesh) { 
+            child.castShadow = true; 
+            child.receiveShadow = true;
+
+            if (child.material) {
+                child.material = child.material.clone();
+                child.material.roughness = 0.8;
+                child.material.envMapIntensity = 0.2;
+                child.material.needsUpdate = true;
+            }
+        }
+    });
+
+    gunMesh.add(gunModel);
+    
+    checkAssetsLoaded(); 
+});
 
 // ── BUILD DUNGEON (OPTIMIZED WITH MERGE) ────────
 let collectibles = [];
@@ -401,7 +431,7 @@ function spawnEnemy(type, wx, wz) {
     let prefabToUse = type === 'brute' ? chainsawPrefab : smilyPrefab;
     let animsToUse = type === 'brute' ? chainsawAnimations : smilyAnimations;
 
-    if (!prefabToUse) return; // Totally prevents spawning without a model!
+    if (!prefabToUse) return; // Prevents spawning without a loaded model
 
     mesh = SkeletonUtils.clone(prefabToUse);
     mesh.position.set(wx, -CELL / 2, wz);
@@ -417,7 +447,7 @@ function spawnEnemy(type, wx, wz) {
         const action = mixer.clipAction(clip);
         action.play();
     } else {
-        // Failsafe: plays the first one it finds
+        // Failsafe: play the first available clip
         const action = mixer.clipAction(animsToUse[0]);
         action.play();
     }
@@ -485,7 +515,7 @@ function spawnWave() {
     if (currentLevel >= 2) {
         type = 'brute';
     } else {
-        // Removed the 'wraith' type. Now it only generates 'brute' or 'grunt' (the ones with 3D models)
+        // Only 'brute' or 'grunt' types — both have 3D models
         const r = Math.random();
         type = r < 0.35 ? 'brute' : 'grunt'; 
     }
@@ -594,8 +624,8 @@ const keys = {};
 document.addEventListener('keydown', e => {
     keys[e.code] = true;
     if (e.code === 'Escape' && gameStarted) {
-        const isOpen = settingsPanel.classList.toggle('open');
-        if (isOpen && document.pointerLockElement) document.exitPointerLock();
+        settingsPanel.classList.toggle('open');
+        if (document.pointerLockElement) document.exitPointerLock();
     }
     if (e.code === 'KeyR') tryReload();
 });
@@ -605,7 +635,7 @@ let locked = false;
 canvas.addEventListener('click', () => { 
     if (!gameStarted) return; 
     canvas.requestPointerLock(); 
-    // Ensures the sound unlocks mid-game if needed:
+    // Resume audio context mid-game if suspended
     if (audioListener.context.state === 'suspended') audioListener.context.resume();
 
     if (backgroundSound.buffer && !backgroundSound.isPlaying) {
@@ -895,7 +925,7 @@ function gameLoop() {
 }
 
 function startGame() {
-    // SOUND SAFETY INSTRUCTION: Unlocks the audio on the first real click!
+    // Unlock audio context on first real click
     if (audioListener.context.state === 'suspended') {
     audioListener.context.resume();
     }
@@ -948,24 +978,23 @@ window.startGame = startGame;
 // ── SETTINGS PANEL ────────────────────────────
 const settingsPanel = document.getElementById('settings-panel');
 
-// FOG slider — direita = menos fog (mais distância visível)
+// FOG slider
 const fogSlider = document.getElementById('s-fog');
 const fogVal    = document.getElementById('s-fog-val');
 fogSlider.addEventListener('input', () => {
     const v = parseFloat(fogSlider.value);
-    // invert: direita = mais denso (menos distância visível)
+    // inverted: right = denser fog (less visible distance)
     const far = 68 - v;
     scene.fog.far  = far;
     scene.fog.near = far * 0.25;
     fogVal.textContent = v;
 });
 
-// DARKNESS slider — direita = mais escuro (invertido: max slider = min intensity)
+// DARKNESS slider
 const darkSlider = document.getElementById('s-dark');
 const darkVal    = document.getElementById('s-dark-val');
 darkSlider.addEventListener('input', () => {
     const v = parseFloat(darkSlider.value);
-    // invert: slider vai de 0 (claro) a 10 (escuro), intensity é o oposto
     ambientLight.intensity = 10 - v;
     darkVal.textContent = v.toFixed(1);
 });
